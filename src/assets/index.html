@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://cdn.bootcss.com/bulma/0.7.1/css/bulma.min.css" rel="stylesheet">
+    <title>MyToken 定制, lhxsimon@gmail.com</title>
+</head>
+
+<body>
+<div id="app">
+    <section class="hero is-info">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title is-spaced">
+                    联系我: {{ email }}
+                </h1>
+                <h2 class="subtitle">
+                    定制 MyToken, 非小号, 币观, 抖音 各种热门 APP
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="content">
+                <h2 class="title is-spaced">MyToken API</h2>
+                <table class="table is-bordered is-striped is-fullwidth">
+                    <thead>
+                    <tr>
+                        <th>项目</th>
+                        <th>URL</th>
+                        <th>参数说明</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="api in api_list">
+                        <td>{{ api.desc }}</td>
+                        <td>
+                            <a :href="api.url" target="_blank">{{ api.url }}</a>
+                        </td>
+                        <td>{{ api.info }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <h2 class="title is-spaced">Demo Chart</h2>
+                <mytoken-chart></mytoken-chart>
+            </div>
+        </div>
+    </section>
+
+
+</div>
+
+<script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdn.bootcss.com/Chart.js/2.7.2/Chart.min.js"></script>
+<script src="https://cdn.bootcss.com/vue-chartjs/3.3.1/vue-chartjs.min.js"></script>
+<script>
+    Vue.component('mytoken-chart', {
+        extends: VueChartJs.Line,
+        methods: {
+            get_eth_price() {
+                let self = this;
+                axios.get('/currency/trend?com_id=eth_cny&market_id=1303&period=1d&limit=13')
+                    .then(function (response) {
+                        if (response.data.status !== 0) {
+                            console.log(response.error)
+                        }
+                        else {
+                            eth_price_list = response.data.data.kline;
+                            self.renderPrice(eth_price_list)
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error)
+                    })
+            },
+            convertTime(unix_timestamp) {
+                let dateTime = new Date(parseInt(unix_timestamp) * 1000);
+                dateStr = dateTime.toDateString();
+                return dateStr.slice(4, dateStr.length)
+            },
+            renderPrice(eth_price_list) {
+                eth_price_list.reverse();
+                lable_list = [];
+                data_list = [];
+                for (let key in eth_price_list) {
+                    eth_price = eth_price_list[key];
+                    lable_list.push(this.convertTime(eth_price.time));
+                    data_list.push(eth_price.close)
+                }
+                this.renderChart({
+                    labels: lable_list,
+                    datasets: [{
+                        label: 'ETH Price',
+                        backgroundColor: 'hsl(204, 86%, 53%)',
+                        data: data_list,
+                    }]
+                }, {
+                    responsive: true,
+                    maintainAspectRatio: false
+                })
+            }
+        },
+        mounted() {
+            this.get_eth_price()
+        }
+    });
+
+    let app = new Vue({
+        el: '#app',
+        data: {
+            email: "lhxsimon@gmail.com",
+            api_list: [{
+                desc: "所有的币列表",
+                url: "/currency/currencylist?page=1&size=20",
+                info: "size: 最多可以到 250 左右, 目前共 499 个币",
+            },
+                {
+                    desc: "币的详细介绍",
+                    url: "/currency/currencydetail?com_id=eth_cny",
+                    info: "com_id: 币简称 + _cny",
+                },
+                {
+                    desc: "实时币价格",
+                    url: "/currency/refreshprice?pair_list=1303_Bitcoin_BTC_CNY,1303_Ethereum_ETH_CNY",
+                    info: "1303代表全网, 多个币用 , 分割",
+                },
+                {
+                    desc: "币的历史价格",
+                    url: "/currency/trend?com_id=eth_cny&market_id=1303&period=1d&limit=14",
+                    info: "com_id: 币名称，market_id: 市场ID",
+                },
+                {
+                    desc: "币市值排行",
+                    url: "/ticker/pairlist?tag=rank_list&rank_limit=500&page=1",
+                    info: "limit: 前多少排名的币",
+                },
+                {
+                    desc: "更多 API",
+                    url: "",
+                    info: "联系我: lhxsimon@gmail.com",
+                },
+            ],
+        },
+    })
+</script>
+</body>
+
+</html>
